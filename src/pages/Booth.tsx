@@ -1,12 +1,17 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import BackButton from "@/components/BackButton";
+import { type BoothSettings, DEFAULT_SETTINGS, FILTERS } from "@/lib/booth-settings";
+import { renderPhotostrip } from "@/lib/strip-renderer";
 
 const PHOTOS_COUNT = 4;
 const COUNTDOWN_SECONDS = 3;
 
 const Booth = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const settings: BoothSettings = (location.state as BoothSettings) || DEFAULT_SETTINGS;
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -14,7 +19,11 @@ const Booth = () => {
   const [flash, setFlash] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [showStrip, setShowStrip] = useState(false);
+  const [rendering, setRendering] = useState(false);
   const stripCanvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Get CSS filter string for live preview
+  const liveFilter = FILTERS.find((f) => f.id === settings.filter)?.css || "";
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -45,7 +54,6 @@ const Booth = () => {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    // Mirror the image
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0);
@@ -64,19 +72,15 @@ const Booth = () => {
       } else {
         setCountdown(null);
         clearInterval(interval);
-        // Flash
         setFlash(true);
         setTimeout(() => setFlash(false), 300);
-        // Capture
         const photo = capturePhoto();
         if (photo) {
           setPhotos((prev) => {
             const next = [...prev, photo];
             if (next.length < PHOTOS_COUNT) {
-              // Auto-start next countdown
               setTimeout(() => startSession(), 800);
             } else {
-              // All photos taken
               setTimeout(() => setShowStrip(true), 500);
             }
             return next;
@@ -86,61 +90,19 @@ const Booth = () => {
     }, 1000);
   }, [photos.length, capturePhoto]);
 
-  const generateStrip = useCallback(() => {
-    if (!stripCanvasRef.current || photos.length < PHOTOS_COUNT) return;
-    const canvas = stripCanvasRef.current;
-    const photoW = 300;
-    const photoH = 225;
-    const padding = 16;
-    const gap = 8;
-    const totalH = padding * 2 + PHOTOS_COUNT * photoH + (PHOTOS_COUNT - 1) * gap + 60;
-    canvas.width = photoW + padding * 2;
-    canvas.height = totalH;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    // White background
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Border
-    ctx.strokeStyle = "hsl(220, 20%, 25%)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
-
-    let loaded = 0;
-    photos.forEach((src, i) => {
-      const img = new Image();
-      img.onload = () => {
-        const y = padding + i * (photoH + gap);
-        // Draw photo with slight border
-        ctx.strokeStyle = "hsl(220, 15%, 80%)";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(padding - 1, y - 1, photoW + 2, photoH + 2);
-        ctx.drawImage(img, padding, y, photoW, photoH);
-        loaded++;
-        if (loaded === PHOTOS_COUNT) {
-          // Add text at bottom
-          ctx.fillStyle = "hsl(220, 20%, 25%)";
-          ctx.font = "16px 'Patrick Hand', cursive";
-          ctx.textAlign = "center";
-          ctx.fillText("mysketchbooth ✿", canvas.width / 2, totalH - 20);
-        }
-      };
-      img.src = src;
-    });
-  }, [photos]);
-
   useEffect(() => {
-    if (showStrip) {
-      setTimeout(generateStrip, 100);
+    if (showStrip && stripCanvasRef.current) {
+      setRendering(true);
+      renderPhotostrip(stripCanvasRef.current, photos, settings).then(() => {
+        setRendering(false);
+      });
     }
-  }, [showStrip, generateStrip]);
+  }, [showStrip, photos, settings]);
 
   const downloadStrip = () => {
     if (!stripCanvasRef.current) return;
     const link = document.createElement("a");
-    link.download = "photobooth-strip.jpg";
+    link.download = `photobooth-${settings.frame}.jpg`;
     link.href = stripCanvasRef.current.toDataURL("image/jpeg", 0.95);
     link.click();
   };
@@ -150,18 +112,26 @@ const Booth = () => {
     setShowStrip(false);
   };
 
+  const changeSettings = () => {
+    navigate("/customize");
+  };
+
   if (showStrip) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
         <BackButton />
         <h2 className="font-sketch text-3xl text-foreground">your photostrip!</h2>
-        <canvas ref={stripCanvasRef} className="sketch-border max-w-[340px] w-full" />
-        <div className="flex gap-4">
+        {rendering && <p className="font-hand text-muted-foreground">applying effects...</p>}
+        <canvas ref={stripCanvasRef} className="max-w-[340px] w-full rounded" />
+        <div className="flex gap-3 flex-wrap justify-center">
           <button onClick={downloadStrip} className="sketch-button">
             download ↓
           </button>
           <button onClick={retake} className="sketch-button">
             retake
+          </button>
+          <button onClick={changeSettings} className="sketch-button">
+            change style
           </button>
         </div>
       </div>
@@ -171,6 +141,26 @@ const Booth = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-6 p-6">
       <BackButton />
+      
+      {/* Current settings indicator */}
+      <div className="flex gap-2 flex-wrap justify-center">
+        {settings.filter !== "none" && (
+          <span className="font-hand text-xs px-2 py-1 sketch-border text-muted-foreground">
+            {FILTERS.find((f) => f.id === settings.filter)?.label}
+          </span>
+        )}
+        {settings.frame !== "classic" && (
+          <span className="font-hand text-xs px-2 py-1 sketch-border text-muted-foreground">
+            {settings.frame}
+          </span>
+        )}
+        {settings.overlay !== "none" && (
+          <span className="font-hand text-xs px-2 py-1 sketch-border text-muted-foreground">
+            {settings.overlay}
+          </span>
+        )}
+      </div>
+
       <h2 className="font-sketch text-3xl text-foreground">
         {photos.length === 0 ? "ready?" : `${photos.length} / ${PHOTOS_COUNT}`}
       </h2>
@@ -182,7 +172,7 @@ const Booth = () => {
           playsInline
           muted
           className="w-full h-full object-cover"
-          style={{ transform: "scaleX(-1)" }}
+          style={{ transform: "scaleX(-1)", filter: liveFilter || undefined }}
         />
         {countdown !== null && (
           <div className="countdown-overlay">
@@ -204,11 +194,16 @@ const Booth = () => {
         <p className="font-hand text-muted-foreground">allow camera access to continue...</p>
       )}
 
-      {/* Mini preview of taken photos */}
       {photos.length > 0 && (
         <div className="flex gap-2">
           {photos.map((p, i) => (
-            <img key={i} src={p} alt={`Photo ${i + 1}`} className="w-16 h-12 object-cover sketch-border" />
+            <img
+              key={i}
+              src={p}
+              alt={`Photo ${i + 1}`}
+              className="w-16 h-12 object-cover sketch-border"
+              style={{ filter: liveFilter || undefined }}
+            />
           ))}
         </div>
       )}
