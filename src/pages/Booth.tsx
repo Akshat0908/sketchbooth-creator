@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import BackButton from "@/components/BackButton";
 import { type BoothSettings, DEFAULT_SETTINGS, FILTERS } from "@/lib/booth-settings";
 import { renderPhotostrip } from "@/lib/strip-renderer";
+import PremiumDownload from "@/components/PremiumDownload";
 
 const PHOTOS_COUNT = 4;
 const COUNTDOWN_SECONDS = 3;
@@ -99,13 +100,6 @@ const Booth = () => {
     }
   }, [showStrip, photos, settings]);
 
-  const downloadStrip = () => {
-    if (!stripCanvasRef.current) return;
-    const link = document.createElement("a");
-    link.download = `photobooth-${settings.frame}.jpg`;
-    link.href = stripCanvasRef.current.toDataURL("image/jpeg", 0.95);
-    link.click();
-  };
 
   const retake = () => {
     setPhotos([]);
@@ -123,10 +117,8 @@ const Booth = () => {
         <h2 className="font-sketch text-3xl text-foreground">your photostrip!</h2>
         {rendering && <p className="font-hand text-muted-foreground">applying effects...</p>}
         <canvas ref={stripCanvasRef} className="max-w-[340px] w-full rounded" />
+        <PremiumDownload stripCanvasRef={stripCanvasRef} settings={settings} />
         <div className="flex gap-3 flex-wrap justify-center">
-          <button onClick={downloadStrip} className="sketch-button">
-            download ↓
-          </button>
           <button onClick={retake} className="sketch-button">
             retake
           </button>
