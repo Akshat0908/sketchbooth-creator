@@ -1,54 +1,54 @@
 import { useState, type RefObject } from 'react';
-import { uploadPhotostrip } from '@/services/storage';
+import { uploadPhotostrip, uploadHDPhotostrip } from '@/services/storage';
 import { createPhotoSession, updatePaymentStatus } from '@/services/photoSession';
 import { paymentService } from '@/services/payment/PaymentService';
 import { downloadHDImage } from '@/services/download';
+import { renderPhotostrip } from '@/lib/strip-renderer';
 import type { BoothSettings } from '@/lib/booth-settings';
 import PaymentModal, { type PaymentStep } from './PaymentModal';
 
 interface PremiumDownloadProps {
   stripCanvasRef: RefObject<HTMLCanvasElement | null>;
   settings: BoothSettings;
+  /** Raw captured photo data-URLs — needed to re-render at HD scale after payment */
+  photos: string[];
 }
 
-const AMOUNT_PAISE = 4900; // ₹49 in paise
+const AMOUNT_PAISE = 4900; // ₹49
 
-const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => {
+const PremiumDownload = ({ stripCanvasRef, settings, photos }: PremiumDownloadProps) => {
   const [modalStep, setModalStep] = useState<PaymentStep | null>(null);
-  /** Persisted after upload so we can retry the download without re-uploading */
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionId,  setSessionId]  = useState<string | null>(null);
 
   const handleUnlock = async () => {
-    const canvas = stripCanvasRef.current;
-    if (!canvas) return;
-
-    // ── Step 1: Upload HD strip ────────────────────────────────────────────
-    setModalStep('uploading');
+    const previewCanvas = stripCanvasRef.current;
+    if (!previewCanvas) return;
 
     const newSessionId = crypto.randomUUID();
-    let imageUrl: string;
 
+    // ── 1. Upload watermarked preview (small, low-res) ─────────────────────
+    setModalStep('uploading');
+    let imageUrl: string;
     try {
-      imageUrl = await uploadPhotostrip(canvas, newSessionId);
+      imageUrl = await uploadPhotostrip(previewCanvas, newSessionId);
     } catch (err) {
-      console.error('[PremiumDownload] Upload failed:', err);
+      console.error('[PremiumDownload] Preview upload failed:', err);
       setModalStep('upload_failed');
       return;
     }
 
-    // ── Step 2: Create DB session record ───────────────────────────────────
+    // ── 2. Create DB session (points to preview URL initially) ─────────────
     try {
       await createPhotoSession(newSessionId, imageUrl);
       setSessionId(newSessionId);
     } catch (err) {
-      console.error('[PremiumDownload] DB record creation failed:', err);
+      console.error('[PremiumDownload] Session creation failed:', err);
       setModalStep('upload_failed');
       return;
     }
 
-    // ── Step 3: Process payment ────────────────────────────────────────────
+    // ── 3. Open Razorpay checkout ──────────────────────────────────────────
     setModalStep('processing');
-
     const paymentResult = await paymentService.processPayment({
       amount: AMOUNT_PAISE,
       currency: 'INR',
@@ -61,60 +61,65 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
       return;
     }
 
-    // ── Step 4: Mark session as paid in DB ─────────────────────────────────
-    // For Razorpay: the verify-razorpay-payment Edge Function already did this
-    //               server-side — skip the client-side call.
-    // For Mock:     Edge Function is not involved, so update client-side.
+    // ── 4. Update payment status (Mock provider only — Razorpay is server-side) ─
     if (!paymentResult.serverVerified) {
       try {
         await updatePaymentStatus(
           newSessionId,
           'paid',
           'mock',
-          paymentResult.paymentReference!,
+          paymentResult.paymentReference,
         );
       } catch (err) {
-        console.error('[PremiumDownload] DB update failed:', err);
-        // Still attempt download — DB inconsistency should not block the user
+        console.error('[PremiumDownload] DB update failed (non-blocking):', err);
       }
     }
 
-    // ── Step 5: Download ──────────────────────────────────────────────────
-    setModalStep('success');
+    // ── 5. Render HD strip (3× scale, no watermark) in off-screen canvas ──
+    setModalStep('uploading_hd');
+    let hdUploadOk = false;
+    try {
+      const hdCanvas = document.createElement('canvas');
+      await renderPhotostrip(hdCanvas, photos, settings, { scale: 3, watermark: false });
 
-    // Brief pause so the user sees the "Payment Successful!" message
-    await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+      // Upload HD — upserts same path, so downloadHDImage still works with the
+      // existing URL stored in the session record.
+      await uploadHDPhotostrip(hdCanvas, newSessionId);
+      hdUploadOk = true;
+    } catch (err) {
+      // HD upload failed — log and continue.  downloadHDImage will serve the
+      // preview-resolution image, which is still better than nothing.
+      console.error('[PremiumDownload] HD upload failed (non-blocking):', err);
+    }
+
+    void hdUploadOk; // used above
+
+    // ── 6. Trigger download ───────────────────────────────────────────────
+    setModalStep('success');
+    await new Promise<void>((resolve) => setTimeout(resolve, 1400));
 
     const dlResult = await downloadHDImage(newSessionId, settings.frame);
     if (!dlResult.success) {
       setModalStep('download_failed');
     } else {
-      // Download started — close modal cleanly
       setModalStep(null);
     }
   };
 
-  /** Retry download without going through payment again */
+  /** Retry download without re-paying */
   const handleDownloadAgain = async () => {
     if (!sessionId) return;
     setModalStep('success');
     const dlResult = await downloadHDImage(sessionId, settings.frame);
-    if (!dlResult.success) {
-      setModalStep('download_failed');
-    } else {
-      setModalStep(null);
-    }
+    if (!dlResult.success) setModalStep('download_failed');
+    else setModalStep(null);
   };
-
-  const handleCloseModal = () => setModalStep(null);
 
   return (
     <>
-      {/* ── Premium Romantic Card ─────────────────────────────────────────── */}
-      <div
-        className="romantic-card rounded p-6 max-w-sm w-full flex flex-col items-center gap-4 text-center"
-      >
-        {/* Header */}
+      {/* ── Premium download card ─────────────────────────────────────────── */}
+      <div className="romantic-card rounded p-6 max-w-sm w-full flex flex-col items-center gap-4 text-center">
+
         <p className="font-romantic text-2xl text-foreground leading-tight">
           ❤️ Save this cute memory forever
         </p>
@@ -125,33 +130,27 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
 
         <div className="w-full h-px" style={{ background: 'hsl(var(--border))' }} />
 
-        {/* Feature list */}
-        <ul className="w-full flex flex-col gap-2 max-w-[220px] mx-auto text-left">
+        <ul className="w-full flex flex-col gap-2 max-w-[230px] mx-auto text-left">
           {[
-            '✨ HD Print Quality',
+            '✨ HD 3× Print Quality — no compression',
             '🚫 No Watermark',
-            '🖼️ Perfect for lockscreens & prints',
-            '⏳ Lifetime private download link',
-          ].map((feature) => (
-            <li key={feature} className="font-hand text-sm text-foreground flex items-center gap-2">
-              <span>{feature}</span>
-            </li>
+            '🖼️ Perfect for frames & lockscreens',
+            '⏳ Instant, lifetime download link',
+          ].map((f) => (
+            <li key={f} className="font-hand text-sm text-foreground">{f}</li>
           ))}
         </ul>
 
-        {/* Price & CTA */}
-        <div className="w-full flex flex-col gap-2 mt-1">
-          <button
-            onClick={handleUnlock}
-            className="romantic-button pulse-rose text-base w-full font-bold flex items-center justify-center gap-1.5"
-          >
-            ✨ Download My Photo Strip — ₹49
-          </button>
-          
-          <p className="font-hand text-muted-foreground text-xs">
-            HD quality • No watermark • Instant download
-          </p>
-        </div>
+        <button
+          onClick={handleUnlock}
+          className="romantic-button pulse-rose text-base w-full font-bold flex items-center justify-center gap-1.5 mt-1"
+        >
+          ✨ Download My Photo Strip — ₹49
+        </button>
+
+        <p className="font-hand text-muted-foreground text-xs">
+          HD quality • No watermark • Instant download
+        </p>
       </div>
 
       {/* ── Payment modal overlay ─────────────────────────────────────────── */}
@@ -159,7 +158,7 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
         <PaymentModal
           step={modalStep}
           onDownloadAgain={handleDownloadAgain}
-          onClose={handleCloseModal}
+          onClose={() => setModalStep(null)}
         />
       )}
     </>

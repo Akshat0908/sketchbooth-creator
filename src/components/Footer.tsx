@@ -9,6 +9,15 @@ const Footer = () => {
         <Link to="/faq" className="footer-link">FAQ</Link>
         <Link to="/about" className="footer-link">About Me</Link>
         <Link to="/contact" className="footer-link">Contact Me</Link>
+        <a
+          href="https://www.instagram.com/the.keepsakebooth"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="footer-link"
+          style={{ color: 'hsl(var(--rose))' }}
+        >
+          ♡ Instagram
+        </a>
       </nav>
     </footer>
   );

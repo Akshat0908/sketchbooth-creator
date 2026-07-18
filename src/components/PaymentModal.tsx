@@ -2,6 +2,7 @@ import type { FC } from 'react';
 
 export type PaymentStep =
   | 'uploading'
+  | 'uploading_hd'
   | 'processing'
   | 'success'
   | 'download_failed'
@@ -16,47 +17,49 @@ interface PaymentModalProps {
 
 const PaymentModal: FC<PaymentModalProps> = ({ step, onDownloadAgain, onClose }) => {
   return (
-    /* Backdrop */
     <div
       className="fixed inset-0 z-50 flex items-center justify-center"
-      style={{ background: 'hsl(var(--sketch-line) / 0.4)', backdropFilter: 'blur(3px)' }}
+      style={{ background: 'hsl(var(--sketch-line) / 0.40)', backdropFilter: 'blur(3px)' }}
     >
-      {/* Modal card */}
       <div
-        className="relative bg-card sketch-border rounded p-8 max-w-xs w-full mx-4 flex flex-col items-center gap-5 text-center shadow-lg"
-        style={{
-          boxShadow: '4px 4px 0 hsl(var(--sketch-line) / 0.15)',
-          border: '2px solid hsl(var(--sketch-line))'
-        }}
+        className="relative bg-card sketch-border rounded p-8 max-w-xs w-full mx-4 flex flex-col items-center gap-5 text-center"
+        style={{ boxShadow: '4px 4px 0 hsl(var(--sketch-line) / 0.15)' }}
       >
 
-        {/* ── Saving / Uploading ─────────────────────────────────── */}
+        {/* ── Saving preview ──────────────────────────────────────── */}
         {step === 'uploading' && (
           <>
             <Spinner />
-            <p className="font-sketch text-2xl text-foreground">
-              saving your memory...
-            </p>
+            <p className="font-sketch text-2xl text-foreground">saving your memory...</p>
             <p className="font-hand text-muted-foreground text-sm leading-relaxed">
-              Uploading your photostrip safely to our secure server 🤍
+              Uploading your strip safely to our secure server 🤍
             </p>
           </>
         )}
 
-        {/* ── Processing payment ────────────────────────────────── */}
+        {/* ── Generating HD version (post-payment) ────────────────── */}
+        {step === 'uploading_hd' && (
+          <>
+            <Spinner />
+            <p className="font-sketch text-2xl text-foreground">preparing your HD strip...</p>
+            <p className="font-hand text-muted-foreground text-sm leading-relaxed">
+              Rendering your high-resolution, watermark-free image ✨
+            </p>
+          </>
+        )}
+
+        {/* ── Processing payment ───────────────────────────────────── */}
         {step === 'processing' && (
           <>
             <Spinner />
-            <p className="font-sketch text-2xl text-foreground">
-              preparing your order...
-            </p>
+            <p className="font-sketch text-2xl text-foreground">preparing your order...</p>
             <p className="font-hand text-muted-foreground text-sm leading-relaxed">
               Connecting with Razorpay. Please do not close this window.
             </p>
           </>
         )}
 
-        {/* ── Payment success / downloading ─────────────────────── */}
+        {/* ── Payment success ──────────────────────────────────────── */}
         {step === 'success' && (
           <>
             <span className="text-5xl animate-bounce">🎉</span>
@@ -69,26 +72,21 @@ const PaymentModal: FC<PaymentModalProps> = ({ step, onDownloadAgain, onClose })
           </>
         )}
 
-        {/* ── Download failed (payment was OK, download failed) ─── */}
+        {/* ── Download failed (payment was OK) ────────────────────── */}
         {step === 'download_failed' && (
           <>
             <span className="text-4xl">🎁</span>
-            <p className="font-sketch text-xl text-foreground">
-              Download didn't start
-            </p>
+            <p className="font-sketch text-xl text-foreground">Download didn't start</p>
             <p className="font-hand text-muted-foreground text-sm leading-relaxed">
-              Your payment was successful! Tap the button below to download your paid strip again.
+              Your payment was successful! Tap below to download your strip again.
             </p>
             <div className="flex flex-col gap-2 w-full">
-              <button
-                onClick={onDownloadAgain}
-                className="romantic-button pulse-rose text-base w-full font-bold"
-              >
+              <button onClick={onDownloadAgain} className="romantic-button pulse-rose text-base w-full font-bold">
                 Download Now ↓
               </button>
               <button
                 onClick={onClose}
-                className="font-hand text-muted-foreground text-sm underline underline-offset-2 hover:text-foreground transition-colors mt-1"
+                className="font-hand text-muted-foreground text-sm underline underline-offset-2 hover:text-foreground transition-colors"
               >
                 dismiss
               </button>
@@ -96,35 +94,27 @@ const PaymentModal: FC<PaymentModalProps> = ({ step, onDownloadAgain, onClose })
           </>
         )}
 
-        {/* ── Upload failed ─────────────────────────────────────── */}
+        {/* ── Upload failed ────────────────────────────────────────── */}
         {step === 'upload_failed' && (
           <>
             <span className="text-4xl">☁️</span>
-            <p className="font-sketch text-xl text-foreground">
-              Unable to save photo
-            </p>
+            <p className="font-sketch text-xl text-foreground">Unable to save photo</p>
             <p className="font-hand text-muted-foreground text-sm leading-relaxed">
-              We couldn't upload your photo. Please check your internet connection and try again.
+              Check your internet connection and try again.
             </p>
-            <button onClick={onClose} className="sketch-button text-base w-full mt-2">
-              try again
-            </button>
+            <button onClick={onClose} className="sketch-button text-base w-full mt-2">try again</button>
           </>
         )}
 
-        {/* ── Payment failed ────────────────────────────────────── */}
+        {/* ── Payment failed / cancelled ───────────────────────────── */}
         {step === 'payment_failed' && (
           <>
             <span className="text-4xl">❌</span>
-            <p className="font-sketch text-xl text-foreground">
-              Payment Cancelled
-            </p>
+            <p className="font-sketch text-xl text-foreground">Payment Cancelled</p>
             <p className="font-hand text-muted-foreground text-sm leading-relaxed">
-              Your photo is safely saved. You can try unlocking it again whenever you're ready.
+              Your photo is safely saved. Try unlocking it again whenever you're ready.
             </p>
-            <button onClick={onClose} className="sketch-button text-base w-full mt-2">
-              try again
-            </button>
+            <button onClick={onClose} className="sketch-button text-base w-full mt-2">try again</button>
           </>
         )}
       </div>
@@ -132,7 +122,6 @@ const PaymentModal: FC<PaymentModalProps> = ({ step, onDownloadAgain, onClose })
   );
 };
 
-/** Simple CSS spinner consistent with the romantic theme */
 const Spinner: FC = () => (
   <div
     className="w-10 h-10 rounded-full border-4"
