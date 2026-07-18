@@ -6,6 +6,12 @@ import {
 
 const PHOTOS_COUNT = 4;
 
+// ── Photo cell dimensions (portrait 3:4) ─────────────────────────────────────
+// Each photo slot is portrait-oriented so selfies fill the frame naturally.
+// photoH / photoW ≈ 1.33  (3:4 ratio)
+const PHOTO_W = 300;
+const PHOTO_H = 400;  // was 225 (landscape) — now 400 (portrait 3:4)
+
 /** Draw a complete photostrip to a canvas with frame, filter, overlay, and caption */
 export async function renderPhotostrip(
   canvas: HTMLCanvasElement,
@@ -37,9 +43,45 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/**
+ * drawPhoto — centre-fits an image into a rectangle, preserving aspect ratio.
+ * This prevents stretching when the captured photo's ratio doesn't exactly
+ * match the cell ratio (e.g. slight orientation differences across devices).
+ */
+function drawPhoto(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  cellX: number,
+  cellY: number,
+  cellW: number,
+  cellH: number,
+) {
+  const imgRatio = img.naturalWidth / img.naturalHeight;
+  const cellRatio = cellW / cellH;
+
+  let drawW = cellW, drawH = cellH, drawX = cellX, drawY = cellY;
+
+  if (imgRatio > cellRatio) {
+    // Image is wider — fit by height, crop sides
+    drawW = cellH * imgRatio;
+    drawX = cellX - (drawW - cellW) / 2;
+  } else {
+    // Image is taller — fit by width, crop top/bottom
+    drawH = cellW / imgRatio;
+    drawY = cellY - (drawH - cellH) / 2;
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(cellX, cellY, cellW, cellH);
+  ctx.clip();
+  ctx.drawImage(img, drawX, drawY, drawW, drawH);
+  ctx.restore();
+}
+
 const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
   classic: async (canvas, ctx, photos, caption) => {
-    const photoW = 300, photoH = 225, padding = 16, gap = 8;
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 16, gap = 8;
     const captionH = caption ? 50 : 30;
     const totalH = padding * 2 + PHOTOS_COUNT * photoH + (PHOTOS_COUNT - 1) * gap + captionH;
     canvas.width = photoW + padding * 2;
@@ -56,7 +98,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
       ctx.strokeStyle = "#c0c5d0";
       ctx.lineWidth = 1;
       ctx.strokeRect(padding - 1, y - 1, photoW + 2, photoH + 2);
-      ctx.drawImage(img, padding, y, photoW, photoH);
+      drawPhoto(ctx, img, padding, y, photoW, photoH);
     }
 
     ctx.fillStyle = "#2d3648";
@@ -66,15 +108,15 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
   },
 
   polaroid: async (canvas, ctx, photos, caption) => {
-    const photoW = 280, photoH = 210, paddingSide = 30, paddingTop = 25, paddingBottom = 70, gap = 15;
+    const photoW = PHOTO_W, photoH = PHOTO_H, paddingSide = 30, paddingTop = 25, paddingBottom = 70, gap = 15;
     const totalH = paddingTop + PHOTOS_COUNT * (photoH + gap) - gap + paddingBottom;
     canvas.width = photoW + paddingSide * 2;
     canvas.height = totalH;
-    
+
     // Cream background
     ctx.fillStyle = "#faf8f4";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Soft shadow border
     ctx.shadowColor = "rgba(0,0,0,0.12)";
     ctx.shadowBlur = 15;
@@ -87,7 +129,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
     for (let i = 0; i < photos.length; i++) {
       const img = await loadImage(photos[i]);
       const y = paddingTop + i * (photoH + gap);
-      ctx.drawImage(img, paddingSide, y, photoW, photoH);
+      drawPhoto(ctx, img, paddingSide, y, photoW, photoH);
     }
 
     // Handwritten caption at bottom
@@ -98,7 +140,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
   },
 
   filmstrip: async (canvas, ctx, photos, caption) => {
-    const photoW = 280, photoH = 210, padding = 35, gap = 6;
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 35, gap = 6;
     const sprocketSize = 12, sprocketGap = 20;
     const captionH = 40;
     const totalH = padding + PHOTOS_COUNT * (photoH + gap) - gap + padding + captionH;
@@ -127,7 +169,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
     for (let i = 0; i < photos.length; i++) {
       const img = await loadImage(photos[i]);
       const y = padding + i * (photoH + gap);
-      ctx.drawImage(img, padding, y, photoW, photoH);
+      drawPhoto(ctx, img, padding, y, photoW, photoH);
     }
 
     // Frame number text
@@ -147,7 +189,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
   },
 
   floral: async (canvas, ctx, photos, caption) => {
-    const photoW = 280, photoH = 210, padding = 30, gap = 12;
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 30, gap = 12;
     const captionH = 55;
     const totalH = padding + PHOTOS_COUNT * (photoH + gap) - gap + padding + captionH;
     canvas.width = photoW + padding * 2;
@@ -206,7 +248,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
       ctx.strokeStyle = "#d4c5b2";
       ctx.lineWidth = 1;
       ctx.strokeRect(padding - 1, y - 1, photoW + 2, photoH + 2);
-      ctx.drawImage(img, padding, y, photoW, photoH);
+      drawPhoto(ctx, img, padding, y, photoW, photoH);
     }
 
     ctx.fillStyle = "#7a6b5d";
@@ -216,7 +258,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
   },
 
   torn: async (canvas, ctx, photos, caption) => {
-    const photoW = 290, photoH = 218, padding = 22, gap = 10;
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 22, gap = 10;
     const captionH = 45;
     const totalH = padding + PHOTOS_COUNT * (photoH + gap) - gap + padding + captionH;
     canvas.width = photoW + padding * 2;
@@ -260,7 +302,7 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
       const rot = (Math.random() - 0.5) * 0.015;
       ctx.translate(padding + photoW / 2, y + photoH / 2);
       ctx.rotate(rot);
-      ctx.drawImage(img, -photoW / 2, -photoH / 2, photoW, photoH);
+      drawPhoto(ctx, img, -photoW / 2, -photoH / 2, photoW, photoH);
       ctx.restore();
     }
 

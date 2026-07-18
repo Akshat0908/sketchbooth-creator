@@ -30,15 +30,31 @@ const Booth = () => {
     let stream: MediaStream | null = null;
     const startCamera = async () => {
       try {
+        // Request the highest resolution the device supports.
+        // height > width asks for portrait orientation on phones.
+        // The browser/OS will pick the closest available resolution.
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+          video: {
+            facingMode: "user",
+            width:  { ideal: 1080 },
+            height: { ideal: 1440 },
+          },
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           setCameraReady(true);
         }
-      } catch (err) {
-        console.error("Camera error:", err);
+      } catch {
+        // Fallback: accept whatever the device offers
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setCameraReady(true);
+          }
+        } catch (err) {
+          console.error("Camera error:", err);
+        }
       }
     };
     startCamera();
@@ -50,16 +66,39 @@ const Booth = () => {
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return null;
     const video = videoRef.current;
+    const vW = video.videoWidth;
+    const vH = video.videoHeight;
+    if (!vW || !vH) return null;
+
+    // ── Center-crop to 3:4 portrait ratio ─────────────────────────────────
+    // This removes the wide background on both sides and focuses on the subject.
+    const TARGET_RATIO = 3 / 4; // portrait
+    let srcX = 0, srcY = 0, srcW = vW, srcH = vH;
+
+    const videoRatio = vW / vH;
+    if (videoRatio > TARGET_RATIO) {
+      // Video is wider than 3:4 — crop left and right sides
+      srcW = Math.round(vH * TARGET_RATIO);
+      srcX = Math.round((vW - srcW) / 2);
+    } else if (videoRatio < TARGET_RATIO) {
+      // Video is taller than 3:4 — crop top and bottom
+      srcH = Math.round(vW / TARGET_RATIO);
+      srcY = Math.round((vH - srcH) / 2);
+    }
+
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width  = srcW;
+    canvas.height = srcH;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
+
+    // Mirror horizontally (selfie convention)
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    return canvas.toDataURL("image/jpeg", 0.92);
+
+    return canvas.toDataURL("image/jpeg", 0.95); // bumped from 0.92
   }, []);
 
   const startSession = useCallback(() => {
