@@ -12,7 +12,10 @@ export interface PhotoSession {
   expires_at: string;
   payment_provider: string | null;
   payment_reference: string | null;
+  razorpay_order_id: string | null;  // Stored by create-razorpay-order Edge Function
+  paid_at: string | null;            // Set by verify-razorpay-payment Edge Function
 }
+
 
 /**
  * Creates a new photo session record in Supabase.

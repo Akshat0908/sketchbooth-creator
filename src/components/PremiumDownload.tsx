@@ -61,17 +61,22 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
       return;
     }
 
-    // ── Step 4: Mark session as paid in DB ────────────────────────────────
-    try {
-      await updatePaymentStatus(
-        newSessionId,
-        'paid',
-        'mock', // Change to 'razorpay' when switching providers
-        paymentResult.paymentReference,
-      );
-    } catch (err) {
-      console.error('[PremiumDownload] DB update failed:', err);
-      // Still attempt download — DB inconsistency should not block the user
+    // ── Step 4: Mark session as paid in DB ─────────────────────────────────
+    // For Razorpay: the verify-razorpay-payment Edge Function already did this
+    //               server-side — skip the client-side call.
+    // For Mock:     Edge Function is not involved, so update client-side.
+    if (!paymentResult.serverVerified) {
+      try {
+        await updatePaymentStatus(
+          newSessionId,
+          'paid',
+          'mock',
+          paymentResult.paymentReference!,
+        );
+      } catch (err) {
+        console.error('[PremiumDownload] DB update failed:', err);
+        // Still attempt download — DB inconsistency should not block the user
+      }
     }
 
     // ── Step 5: Download ──────────────────────────────────────────────────
