@@ -8,19 +8,11 @@ const Contact = () => {
         <h1 className="font-hand text-4xl text-center mb-10 text-foreground">Contact Me</h1>
         <div className="text-center space-y-4 text-muted-foreground text-sm leading-relaxed">
           <p>
-            Have any questions, feedback, or suggestions? I'd love to hear from you!
+            Have any questions, feedback, or suggestions? I'd genuinely love to hear from you!
           </p>
           <p>
-            You can reach me through my social media accounts:
+            Reach out and I'll get back to you as soon as I can. 🤍
           </p>
-          <div className="flex justify-center gap-6 mt-6">
-            <a href="https://www.tiktok.com/@visarchivess" target="_blank" rel="noopener noreferrer" className="sketch-button inline-flex items-center gap-2">
-              TikTok
-            </a>
-            <a href="https://www.instagram.com/visarchivess" target="_blank" rel="noopener noreferrer" className="sketch-button inline-flex items-center gap-2">
-              Instagram
-            </a>
-          </div>
         </div>
       </div>
     </div>
