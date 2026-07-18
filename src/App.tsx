@@ -12,6 +12,7 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import Pricing from "./pages/Pricing";
 import NotFound from "./pages/NotFound";
+import MusicPlayer from "./components/MusicPlayer";
 
 const queryClient = new QueryClient();
 
@@ -21,16 +22,18 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Floating music toggle — renders on every page, survives navigation */}
+        <MusicPlayer />
         <Routes>
-          <Route path="/" element={<Index />} />
+          <Route path="/"          element={<Index />}     />
           <Route path="/customize" element={<Customize />} />
-          <Route path="/booth" element={<Booth />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/booth"     element={<Booth />}     />
+          <Route path="/pricing"   element={<Pricing />}   />
+          <Route path="/faq"       element={<FAQ />}       />
+          <Route path="/about"     element={<About />}     />
+          <Route path="/contact"   element={<Contact />}   />
+          <Route path="/privacy"   element={<Privacy />}   />
+          <Route path="*"          element={<NotFound />}  />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
@@ -38,3 +41,4 @@ const App = () => (
 );
 
 export default App;
+
