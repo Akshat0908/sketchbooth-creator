@@ -83,7 +83,7 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
     setModalStep('success');
 
     // Brief pause so the user sees the "Payment Successful!" message
-    await new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    await new Promise<void>((resolve) => setTimeout(resolve, 1500));
 
     const dlResult = await downloadHDImage(newSessionId, settings.frame);
     if (!dlResult.success) {
@@ -110,49 +110,48 @@ const PremiumDownload = ({ stripCanvasRef, settings }: PremiumDownloadProps) => 
 
   return (
     <>
-      {/* ── Premium card ──────────────────────────────────────────────────── */}
+      {/* ── Premium Romantic Card ─────────────────────────────────────────── */}
       <div
-        className="sketch-border bg-card rounded p-6 max-w-xs w-full flex flex-col items-center gap-4"
-        style={{ boxShadow: '3px 3px 0 hsl(220 20% 20% / 0.12)' }}
+        className="romantic-card rounded p-6 max-w-sm w-full flex flex-col items-center gap-4 text-center"
       >
         {/* Header */}
-        <p className="font-sketch text-xl text-foreground text-center leading-tight">
-          ❤️ Keep this memory forever
+        <p className="font-romantic text-2xl text-foreground leading-tight">
+          ❤️ Save this cute memory forever
         </p>
 
-        <div className="w-full h-px" style={{ background: 'hsl(220 15% 78%)' }} />
-
-        {/* Title */}
-        <p className="font-hand text-muted-foreground text-sm text-center uppercase tracking-widest">
-          Unlock Premium Download
+        <p className="font-hand text-muted-foreground text-xs leading-relaxed max-w-[280px]">
+          Unlock your high-quality, print-ready strip to frame, put on your lockscreen, or keep in your photo journal.
         </p>
+
+        <div className="w-full h-px" style={{ background: 'hsl(var(--border))' }} />
 
         {/* Feature list */}
-        <ul className="w-full flex flex-col gap-1.5">
+        <ul className="w-full flex flex-col gap-2 max-w-[220px] mx-auto text-left">
           {[
-            'HD Quality',
-            'No Watermark',
-            'Print Ready',
-            'Lifetime Download',
+            '✨ HD Print Quality',
+            '🚫 No Watermark',
+            '🖼️ Perfect for lockscreens & prints',
+            '⏳ Lifetime private download link',
           ].map((feature) => (
-            <li key={feature} className="font-hand text-foreground flex items-center gap-2">
-              <span className="text-xs font-bold">✓</span>
-              {feature}
+            <li key={feature} className="font-hand text-sm text-foreground flex items-center gap-2">
+              <span>{feature}</span>
             </li>
           ))}
         </ul>
 
-        {/* Price */}
-        <p className="font-sketch text-3xl text-foreground">Only ₹49</p>
-
-        {/* CTA */}
-        <button
-          onClick={handleUnlock}
-          className="sketch-button text-base w-full"
-          style={{ fontSize: '1rem' }}
-        >
-          Unlock HD Download ↓
-        </button>
+        {/* Price & CTA */}
+        <div className="w-full flex flex-col gap-2 mt-1">
+          <button
+            onClick={handleUnlock}
+            className="romantic-button pulse-rose text-base w-full font-bold flex items-center justify-center gap-1.5"
+          >
+            ✨ Download My Photo Strip — ₹49
+          </button>
+          
+          <p className="font-hand text-muted-foreground text-xs">
+            HD quality • No watermark • Instant download
+          </p>
+        </div>
       </div>
 
       {/* ── Payment modal overlay ─────────────────────────────────────────── */}

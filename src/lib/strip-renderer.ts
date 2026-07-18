@@ -311,4 +311,161 @@ const FRAME_RENDERERS: Record<FrameStyle, FrameRenderer> = {
     ctx.textAlign = "center";
     ctx.fillText(caption || "torn from time ✦", canvas.width / 2, totalH - 15);
   },
+
+  // ── 💕 Hearts frame ─────────────────────────────────────────────────────
+  hearts: async (canvas, ctx, photos, caption) => {
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 20, gap = 10;
+    const captionH = 60;
+    const totalH = padding * 2 + PHOTOS_COUNT * photoH + (PHOTOS_COUNT - 1) * gap + captionH;
+    canvas.width  = photoW + padding * 2;
+    canvas.height = totalH;
+
+    // Soft blush background
+    ctx.fillStyle = "#fff0f3";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle pink paper texture
+    for (let i = 0; i < 120; i++) {
+      ctx.fillStyle = `rgba(230, 160, 175, ${Math.random() * 0.04})`;
+      ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 2, 2);
+    }
+
+    // Outer border — rose
+    ctx.strokeStyle = "#c4687a";
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+
+    // Inner dashed border
+    ctx.strokeStyle = "#e8a0b0";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.strokeRect(9, 9, canvas.width - 18, canvas.height - 18);
+    ctx.setLineDash([]);
+
+    // Draw heart at each corner
+    const drawHeart = (cx: number, cy: number, size: number) => {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.fillStyle = "#e07090";
+      ctx.beginPath();
+      ctx.moveTo(0, size * 0.3);
+      ctx.bezierCurveTo( size * 0.5, -size * 0.3,  size, size * 0.1,  0, size);
+      ctx.bezierCurveTo(-size,       size * 0.1, -size * 0.5, -size * 0.3, 0, size * 0.3);
+      ctx.fill();
+      ctx.restore();
+    };
+    const hs = 7;
+    drawHeart(padding / 2, padding / 2, hs);
+    drawHeart(canvas.width - padding / 2, padding / 2, hs);
+    drawHeart(padding / 2, canvas.height - padding / 2 - hs * 2, hs);
+    drawHeart(canvas.width - padding / 2, canvas.height - padding / 2 - hs * 2, hs);
+
+    // Small scattered hearts along top and bottom edges
+    const borderHearts = ["♡", "♥", "♡", "♥", "♡"];
+    ctx.fillStyle = "#d4788a";
+    ctx.font = "10px serif";
+    ctx.textAlign = "center";
+    for (let i = 0; i < 5; i++) {
+      const x = (canvas.width / 6) * (i + 0.5) + 10;
+      ctx.fillText(borderHearts[i], x, 18);
+      ctx.fillText(borderHearts[i], x, canvas.height - 8);
+    }
+
+    // Photo cells
+    for (let i = 0; i < photos.length; i++) {
+      const img = await loadImage(photos[i]);
+      const y = padding + i * (photoH + gap);
+      // Soft rose photo border
+      ctx.strokeStyle = "#e8a8b8";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(padding - 1, y - 1, photoW + 2, photoH + 2);
+      drawPhoto(ctx, img, padding, y, photoW, photoH);
+    }
+
+    // Caption
+    ctx.fillStyle = "#b05068";
+    ctx.font = `italic bold 22px 'Caveat', cursive`;
+    ctx.textAlign = "center";
+    ctx.fillText(caption || "♡ us, always ♡", canvas.width / 2, totalH - 22);
+
+    // Small heart row below caption
+    ctx.fillStyle = "#e07090";
+    ctx.font = "11px serif";
+    ctx.fillText("♥  ♡  ♥", canvas.width / 2, totalH - 8);
+  },
+
+  // ── 🎞 Love Film frame ───────────────────────────────────────────────────
+  lovefilm: async (canvas, ctx, photos, caption) => {
+    const photoW = PHOTO_W, photoH = PHOTO_H, padding = 32, gap = 6;
+    const sprocketH = 10, sprocketW = 8, sprocketGap = 18;
+    const captionH = 48;
+    const totalH = padding + PHOTOS_COUNT * (photoH + gap) - gap + padding + captionH;
+    canvas.width  = photoW + padding * 2;
+    canvas.height = totalH;
+
+    // Deep rose-black film background
+    ctx.fillStyle = "#1a0a0e";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Subtle vertical grain
+    for (let i = 0; i < 80; i++) {
+      ctx.strokeStyle = `rgba(255,180,180,${Math.random() * 0.03})`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(Math.random() * canvas.width, 0);
+      ctx.lineTo(Math.random() * canvas.width, canvas.height);
+      ctx.stroke();
+    }
+
+    // Rose-pink sprocket holes
+    const numSprockets = Math.floor(totalH / sprocketGap);
+    for (let i = 0; i < numSprockets; i++) {
+      const y = 8 + i * sprocketGap;
+      // Left
+      ctx.fillStyle = "#3a1820";
+      ctx.beginPath();
+      ctx.roundRect(5, y, sprocketW, sprocketH, 2);
+      ctx.fill();
+      ctx.strokeStyle = "#c4687a";
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(5, y, sprocketW, sprocketH);
+      // Right
+      ctx.fillStyle = "#3a1820";
+      ctx.beginPath();
+      ctx.roundRect(canvas.width - 5 - sprocketW, y, sprocketW, sprocketH, 2);
+      ctx.fill();
+      ctx.strokeStyle = "#c4687a";
+      ctx.strokeRect(canvas.width - 5 - sprocketW, y, sprocketW, sprocketH);
+    }
+
+    // Photo cells
+    for (let i = 0; i < photos.length; i++) {
+      const img = await loadImage(photos[i]);
+      const y = padding + i * (photoH + gap);
+      // Rose glow border
+      ctx.strokeStyle = "#c4687a";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(padding - 1, y - 1, photoW + 2, photoH + 2);
+      drawPhoto(ctx, img, padding, y, photoW, photoH);
+
+      // Frame number
+      ctx.fillStyle = "#e8a0b0";
+      ctx.font = "10px monospace";
+      ctx.textAlign = "left";
+      ctx.fillText(`${i + 1}♡`, padding + 4, y + photoH - 4);
+    }
+
+    // Caption — glowing pink
+    ctx.fillStyle = "#f0a0b8";
+    ctx.font = "italic bold 20px 'Caveat', cursive";
+    ctx.textAlign = "center";
+    ctx.fillText(caption || "♡ captured in love ♡", canvas.width / 2, totalH - 20);
+
+    // Thin rose lines above/below caption
+    ctx.strokeStyle = "#c4687a";
+    ctx.lineWidth = 0.5;
+    const capY = totalH - captionH + 6;
+    ctx.beginPath(); ctx.moveTo(padding, capY); ctx.lineTo(canvas.width - padding, capY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(padding, totalH - 6); ctx.lineTo(canvas.width - padding, totalH - 6); ctx.stroke();
+  },
 };

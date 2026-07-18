@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Inter:wght@300;400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Patrick+Hand&family=Inter:wght@300;400;500&family=Dancing+Script:wght@400;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,40 +6,46 @@
 
 @layer base {
   :root {
-    --background: 220 14% 94%;
-    --foreground: 220 20% 20%;
+    /* ── Romantic warm rose-cream palette ──────────────────────────────── */
+    --background:   345 30% 96%;   /* soft blush white */
+    --foreground:   340 25% 22%;   /* deep rose-brown */
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 20% 20%;
+    --card:         0   0% 100%;
+    --card-foreground: 340 25% 22%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 20%;
+    --popover:      0   0% 100%;
+    --popover-foreground: 340 25% 22%;
 
-    --primary: 220 20% 20%;
-    --primary-foreground: 220 14% 94%;
+    --primary:      340 25% 22%;
+    --primary-foreground: 345 30% 96%;
 
-    --secondary: 215 15% 88%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary:    345 25% 90%;
+    --secondary-foreground: 340 25% 22%;
 
-    --muted: 215 15% 88%;
-    --muted-foreground: 215 12% 50%;
+    --muted:        345 20% 88%;
+    --muted-foreground: 340 15% 52%;
 
-    --accent: 220 25% 85%;
-    --accent-foreground: 220 20% 20%;
+    --accent:       345 35% 85%;
+    --accent-foreground: 340 25% 22%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive:  0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 220 15% 78%;
-    --input: 220 15% 78%;
-    --ring: 220 20% 20%;
+    --border:       340 20% 78%;
+    --input:        340 20% 78%;
+    --ring:         340 25% 22%;
 
     --radius: 0.25rem;
 
-    --sketch-line: 220 20% 25%;
-    --sketch-fill: 220 14% 96%;
-    --sketch-accent: 215 25% 60%;
-    --booth-bg: 0 0% 100%;
+    --sketch-line:  340 28% 28%;
+    --sketch-fill:  345 30% 97%;
+    --sketch-accent: 345 40% 65%;
+    --booth-bg:     0   0% 100%;
+
+    /* Romantic accent colours used in strip renderer & UI */
+    --rose:        350 70% 68%;
+    --blush:       345 55% 88%;
+    --petal:       355 45% 92%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -50,9 +56,10 @@
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --font-sketch: 'Caveat', cursive;
-    --font-hand: 'Patrick Hand', cursive;
-    --font-clean: 'Inter', sans-serif;
+    --font-sketch:  'Caveat', cursive;
+    --font-hand:    'Patrick Hand', cursive;
+    --font-romantic:'Dancing Script', cursive;
+    --font-clean:   'Inter', sans-serif;
   }
 }
 
@@ -64,10 +71,15 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-clean);
+    /* Subtle petal texture using a radial gradient */
+    background-image:
+      radial-gradient(circle at 15% 15%, hsl(350 70% 68% / 0.06) 0%, transparent 55%),
+      radial-gradient(circle at 85% 80%, hsl(345 55% 88% / 0.10) 0%, transparent 50%);
+    background-attachment: fixed;
   }
 }
 
-/* Sketch-style utilities */
+/* ── Typography utilities ───────────────────────────────────────────────── */
 .font-sketch {
   font-family: var(--font-sketch);
 }
@@ -76,19 +88,23 @@
   font-family: var(--font-hand);
 }
 
+.font-romantic {
+  font-family: var(--font-romantic);
+}
+
+/* ── Sketch-style borders ───────────────────────────────────────────────── */
 .sketch-border {
   border: 2px solid hsl(var(--sketch-line));
   border-radius: 2px;
 }
 
-/* Hand-drawn wobbly border effect */
 .sketch-box {
   position: relative;
   border: 2.5px solid hsl(var(--sketch-line));
   border-radius: 3px;
 }
 
-/* Photostrip styling */
+/* ── Photostrip ─────────────────────────────────────────────────────────── */
 .photostrip {
   background: hsl(var(--booth-bg));
   border: 2px solid hsl(var(--sketch-line));
@@ -100,7 +116,7 @@
   margin-bottom: 4px;
 }
 
-/* Enter button sketch style */
+/* ── Buttons ────────────────────────────────────────────────────────────── */
 .sketch-button {
   background: hsl(var(--booth-bg));
   border: 2px solid hsl(var(--sketch-line));
@@ -118,7 +134,27 @@
   color: hsl(var(--booth-bg));
 }
 
-/* Back button */
+/* Romantic primary CTA — rose fill */
+.romantic-button {
+  background: hsl(var(--rose));
+  border: 2px solid hsl(var(--sketch-line));
+  color: #fff;
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  padding: 0.85rem 2rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+  box-shadow: 3px 3px 0 hsl(var(--sketch-line) / 0.15);
+}
+
+.romantic-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 4px 5px 0 hsl(var(--sketch-line) / 0.18);
+  background: hsl(350 65% 62%);
+}
+
+/* ── Back button ────────────────────────────────────────────────────────── */
 .back-button {
   background: transparent;
   border: 1.5px solid hsl(var(--sketch-line));
@@ -135,7 +171,7 @@
   background: hsl(var(--sketch-line) / 0.08);
 }
 
-/* Footer links */
+/* ── Footer links ───────────────────────────────────────────────────────── */
 .footer-link {
   color: hsl(var(--muted-foreground));
   font-family: var(--font-hand);
@@ -148,14 +184,18 @@
   color: hsl(var(--foreground));
 }
 
-/* Camera viewfinder */
+/* ── Camera viewfinder ──────────────────────────────────────────────────── */
 .viewfinder {
   border: 3px solid hsl(var(--sketch-line));
   border-radius: 4px;
   overflow: hidden;
+  /* Soft rose corner glow */
+  box-shadow:
+    0 0 0 1px hsl(var(--rose) / 0.15),
+    4px 4px 0 hsl(var(--sketch-line) / 0.08);
 }
 
-/* Countdown overlay */
+/* ── Countdown overlay ──────────────────────────────────────────────────── */
 .countdown-overlay {
   position: absolute;
   inset: 0;
@@ -174,10 +214,10 @@
   text-shadow: 2px 2px 8px hsl(var(--sketch-line) / 0.5);
 }
 
-/* Flash effect */
+/* ── Flash effect ───────────────────────────────────────────────────────── */
 @keyframes flash {
-  0% { opacity: 0; }
-  50% { opacity: 1; }
+  0%   { opacity: 0; }
+  50%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
@@ -190,7 +230,43 @@
   z-index: 20;
 }
 
-/* Payment modal spinner */
+/* ── Spinner ────────────────────────────────────────────────────────────── */
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* ── Floating hearts animation (homepage decoration) ───────────────────── */
+@keyframes floatHeart {
+  0%   { transform: translateY(0)   scale(1)   rotate(-8deg); opacity: 0.7; }
+  50%  { transform: translateY(-18px) scale(1.08) rotate(5deg);  opacity: 1;   }
+  100% { transform: translateY(0)   scale(1)   rotate(-8deg); opacity: 0.7; }
+}
+
+.heart-float {
+  animation: floatHeart 3.5s ease-in-out infinite;
+  display: inline-block;
+  color: hsl(var(--rose));
+}
+
+.heart-float:nth-child(2) { animation-delay: 0.8s; }
+.heart-float:nth-child(3) { animation-delay: 1.6s; }
+
+/* ── Romantic card glow ─────────────────────────────────────────────────── */
+.romantic-card {
+  background: hsl(0 0% 100%);
+  border: 2px solid hsl(var(--sketch-line));
+  border-radius: 4px;
+  box-shadow:
+    3px 3px 0 hsl(var(--sketch-line) / 0.10),
+    0 0 0 4px hsl(var(--rose) / 0.06);
+}
+
+/* ── Soft pulse for CTA ─────────────────────────────────────────────────── */
+@keyframes softPulse {
+  0%, 100% { box-shadow: 3px 3px 0 hsl(var(--sketch-line) / 0.12), 0 0 0 0 hsl(var(--rose) / 0.20); }
+  50%       { box-shadow: 3px 3px 0 hsl(var(--sketch-line) / 0.12), 0 0 0 6px hsl(var(--rose) / 0);  }
+}
+
+.pulse-rose {
+  animation: softPulse 2.5s ease-in-out infinite;
 }

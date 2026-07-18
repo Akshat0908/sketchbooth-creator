@@ -3,14 +3,19 @@ import { useNavigate } from "react-router-dom";
 import BackButton from "@/components/BackButton";
 import {
   type BoothSettings,
-  type PhotoFilter,
-  type FrameStyle,
-  type OverlayEffect,
   DEFAULT_SETTINGS,
   FILTERS,
   FRAMES,
   OVERLAYS,
 } from "@/lib/booth-settings";
+
+const ROMANTIC_SUGGESTIONS = [
+  "you & me 🤍",
+  "date night 🌹",
+  "our happy place ✨",
+  "forever 🔒",
+  "us ✿",
+];
 
 const Customize = () => {
   const navigate = useNavigate();
@@ -46,7 +51,7 @@ const Customize = () => {
         </div>
       </section>
 
-      {/* Frame picker */}
+      {/* Frame style picker */}
       <section className="w-full max-w-md">
         <h2 className="font-hand text-xl text-foreground mb-3">frame style</h2>
         <div className="grid grid-cols-3 gap-2">
@@ -56,9 +61,14 @@ const Customize = () => {
               onClick={() => setSettings((s) => ({ ...s, frame: f.id }))}
               className={`py-2.5 px-3 rounded font-hand text-sm transition-all ${
                 settings.frame === f.id
-                  ? "bg-foreground text-background"
+                  ? "bg-foreground text-background font-bold border-transparent"
                   : "sketch-border hover:bg-accent"
               }`}
+              style={
+                settings.frame === f.id && (f.id === 'hearts' || f.id === 'lovefilm')
+                  ? { background: 'hsl(var(--rose))', color: '#fff' }
+                  : undefined
+              }
             >
               <span className="mr-1">{f.emoji}</span> {f.label}
             </button>
@@ -86,9 +96,23 @@ const Customize = () => {
         </div>
       </section>
 
-      {/* Caption */}
+      {/* Caption & Suggestions */}
       <section className="w-full max-w-md">
-        <h2 className="font-hand text-xl text-foreground mb-3">caption</h2>
+        <h2 className="font-hand text-xl text-foreground mb-2">caption</h2>
+        
+        {/* Caption suggestion chips */}
+        <div className="flex gap-2 flex-wrap mb-3">
+          {ROMANTIC_SUGGESTIONS.map((suggestion) => (
+            <button
+              key={suggestion}
+              onClick={() => setSettings((s) => ({ ...s, caption: suggestion }))}
+              className="px-3 py-1 rounded-full text-xs font-hand bg-card sketch-border text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              {suggestion}
+            </button>
+          ))}
+        </div>
+
         <input
           type="text"
           value={settings.caption}
@@ -99,8 +123,12 @@ const Customize = () => {
         />
       </section>
 
-      <button onClick={handleStart} className="sketch-button text-xl mt-2">
-        start photobooth →
+      {/* CTA Button */}
+      <button 
+        onClick={handleStart} 
+        className="romantic-button pulse-rose text-xl mt-2 font-bold px-8 py-3.5"
+      >
+        start photobooth 📸
       </button>
     </div>
   );
