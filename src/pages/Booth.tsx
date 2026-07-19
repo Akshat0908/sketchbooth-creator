@@ -137,6 +137,16 @@ const Booth = () => {
           const track = stream.getVideoTracks()[0];
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           imageCaptureRef.current = new (window as any).ImageCapture(track);
+
+          // ── Silent warm-up: pre-initialize the still-image pipeline ────
+          // takePhoto() is slow on the very first call (camera auto-focus
+          // & AE need to lock — can take 300-700ms). By firing one dummy
+          // capture ~400ms after the stream starts, the pipeline is hot
+          // before the user even clicks "start". The 3-second countdown
+          // gives more than enough headroom for this to complete silently.
+          setTimeout(() => {
+            imageCaptureRef.current?.takePhoto().catch(() => {});
+          }, 400);
         } catch {
           imageCaptureRef.current = null;
         }
