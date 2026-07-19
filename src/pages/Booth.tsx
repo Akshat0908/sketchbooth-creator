@@ -48,7 +48,26 @@ function drawCroppedPortrait(
   return canvas.toDataURL("image/jpeg", 0.95);
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+/**
+ * Quick luminance check on a thumbnail of the bitmap.
+ * Returns true if the frame is essentially black (camera not warmed up yet).
+ * A black JPEG has avg channel value close to 0; we use 15 as the threshold.
+ */
+function bitmapIsBlack(bitmap: ImageBitmap): boolean {
+  const SIZE = 20;
+  const tmp  = document.createElement("canvas");
+  tmp.width = SIZE; tmp.height = SIZE;
+  const ctx = tmp.getContext("2d");
+  if (!ctx) return false;
+  ctx.drawImage(bitmap, 0, 0, SIZE, SIZE);
+  const { data } = ctx.getImageData(0, 0, SIZE, SIZE);
+  let sum = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    sum += data[i] + data[i + 1] + data[i + 2];
+  }
+  return sum / (SIZE * SIZE * 3) < 15; // avg luminance < 15 = black frame
+}
+
 
 const Booth = () => {
   const navigate  = useNavigate();
@@ -135,7 +154,9 @@ const Booth = () => {
   /**
    * Async capturePhoto:
    *  1. Tries ImageCapture.takePhoto() (full-sensor still, higher quality)
-   *  2. Falls back to drawing the current video frame (lower quality, universal)
+   *     — if the result is a black frame (camera not yet warmed up on first
+   *       shot), discards it and falls through to Path B automatically.
+   *  2. Falls back to drawing the current video frame (universal support).
    *
    * Always center-crops to 3:4 portrait and mirrors horizontally.
    */
@@ -148,6 +169,16 @@ const Booth = () => {
       try {
         const blob   = await imageCaptureRef.current.takePhoto();
         const bitmap = await createImageBitmap(blob);
+
+        // Guard against the "black first frame" warm-up issue:
+        // takePhoto() can succeed but return a black image on the very first
+        // call because the camera's still-image pipeline isn't ready yet.
+        // Detect this and fall through to the video-frame fallback.
+        if (bitmapIsBlack(bitmap)) {
+          bitmap.close();
+          throw new Error("black frame — falling back to video");
+        }
+
         const result = drawCroppedPortrait(canvas, bitmap, bitmap.width, bitmap.height);
         bitmap.close();
         if (result) return result;
