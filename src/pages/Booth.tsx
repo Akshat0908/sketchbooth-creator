@@ -238,12 +238,12 @@ const Booth = () => {
     }, 1000);
   }, [photos.length, capturePhoto]);
 
-  // ── Strip rendering (watermarked preview, scale=1) ─────────────────────────
+  // ── Strip rendering (watermarked preview, scale=3) ─────────────────────────
   useEffect(() => {
     if (showStrip && stripCanvasRef.current) {
       setRendering(true);
       renderPhotostrip(stripCanvasRef.current, photos, settings, {
-        scale: 1,
+        scale: 3,
         watermark: true,  // Free preview always watermarked
       }).then(() => setRendering(false));
     }
